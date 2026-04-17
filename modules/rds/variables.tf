@@ -15,7 +15,9 @@ variable "private_subnet_ids" {
 }
 
 variable "app_sg_id" {
-  type = string
+  type        = string
+  default     = ""
+  description = "Optional: ECS app security group ID (if not provided, security group rule must be created separately)"
 }
 
 variable "db_password" {

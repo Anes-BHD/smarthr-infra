@@ -4,14 +4,6 @@ resource "aws_security_group" "rds" {
   description = "RDS: allow MySQL only from ECS app tasks"
   vpc_id      = var.vpc_id
 
-  ingress {
-    description     = "MySQL from ECS app tasks only"
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [var.app_sg_id]
-  }
-
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -21,6 +13,18 @@ resource "aws_security_group" "rds" {
   }
 
   tags = { Name = "${var.project}-sg-rds" }
+}
+
+# ── RDS Security Group Ingress Rule (separate to avoid circular dependency) ───
+resource "aws_security_group_rule" "rds_ingress_from_app" {
+  count                    = var.app_sg_id != "" ? 1 : 0
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  source_security_group_id = var.app_sg_id
+  security_group_id        = aws_security_group.rds.id
+  description              = "MySQL from ECS app tasks only"
 }
 
 # ── DB Subnet Group (spans both AZs) ─────────────────────────────────────────
