@@ -11,7 +11,7 @@ terraform {
     key            = "smarthr/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
-    dynamodb_table = "smarthr-terraform-locks"
+    use_lockfile   = true
   }
 }
 
