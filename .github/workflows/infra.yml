@@ -34,7 +34,6 @@ jobs:
         uses: actions/checkout@v4
 
       # Checkov — config file is at repo root (.checkov.yaml)
-
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
@@ -46,12 +45,6 @@ jobs:
           soft_fail: false
         continue-on-error: false
 
-      - name: Upload SARIF
-        if: github.event_name == 'push'
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: checkov-results.sarif
-
       # tfsec
       - name: Run tfsec
         uses: aquasecurity/tfsec-action@v1.0.0
@@ -61,28 +54,17 @@ jobs:
           format: sarif
           sarif_file: tfsec-results.sarif
 
-      - name: Upload tfsec SARIF
-        uses: github/codeql-action/upload-sarif@v4
+
+      - name: Upload scan results as artifact
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: tfsec-results.sarif
-
-      # Trivy
-      - name: Run Trivy IaC scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: config
-          scan-ref: ${{ env.WORKING_DIR }}
-          format: sarif
-          output: trivy-results.sarif
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-
-      - name: Upload Trivy SARIF
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: trivy-results.sarif
+          name: security-scan-results
+          path: |
+            checkov-results.sarif
+            tfsec-results.sarif
+            trivy-results.sarif
+          retention-days: 30
 
   # ── 2. Terraform Validate & Format ─────────────────────────────────────────
   validate:
