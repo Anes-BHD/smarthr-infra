@@ -64,6 +64,8 @@ jobs:
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
           exit-code: "1"
+      - name: Debug Trivy output
+        run: cat trivy-results.sarif
 
       - name: Upload scan results as artifact
         uses: actions/upload-artifact@v4
