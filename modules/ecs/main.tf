@@ -1,7 +1,20 @@
+# ── KMS Key for Encryption ────────────────────────────────────────────────────
+resource "aws_kms_key" "ecs" {
+  description             = "KMS key for ECS CloudWatch logs encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+}
+
+resource "aws_kms_alias" "ecs" {
+  name          = "alias/${var.project}-ecs"
+  target_key_id = aws_kms_key.ecs.key_id
+}
+
 # ── CloudWatch Log Group ──────────────────────────────────────────────────────
 resource "aws_cloudwatch_log_group" "main" {
   name              = "/ecs/${var.project}"
   retention_in_days = 30
+  kms_key_id        = aws_kms_key.ecs.arn
 }
 
 # ── ECS Cluster ───────────────────────────────────────────────────────────────
@@ -108,6 +121,46 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
   })
 }
 
+# ── IAM Task Role (separate from Execution Role for CKV_AWS_249) ──────────────
+resource "aws_iam_role" "ecs_task" {
+  name = "${var.project}-ecs-task-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task_permissions" {
+  name = "${var.project}-ecs-task-policy"
+  role = aws_iam_role.ecs_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "${aws_cloudwatch_log_group.main.arn}:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = aws_kms_key.ecs.arn
+      }
+    ]
+  })
+}
+
 # ── Service Connect Namespace ─────────────────────────────────────────────────
 resource "aws_service_discovery_private_dns_namespace" "main" {
   name        = "${var.project}.local"
@@ -123,7 +176,7 @@ resource "aws_ecs_task_definition" "cache" {
   cpu                      = "512"
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   runtime_platform {
     cpu_architecture        = "X86_64"
@@ -173,7 +226,7 @@ resource "aws_ecs_task_definition" "app" {
   cpu                      = "4096"
   memory                   = "8192"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   runtime_platform {
     cpu_architecture        = "X86_64"
@@ -196,24 +249,24 @@ resource "aws_ecs_task_definition" "app" {
       }]
 
       environment = [
-        { name = "REDIS_HOST",                     value = "${var.project}-redis" },
-        { name = "APP_ENV",                        value = "production" },
-        { name = "DB_USERNAME",                    value = "smarthr" },
-        { name = "REDIS_PORT",                     value = "6379" },
-        { name = "DB_PORT",                        value = "3306" },
-        { name = "REDIS_CLIENT",                   value = "phpredis" },
-        { name = "APP_NAME",                       value = "Smarthr" },
+        { name = "REDIS_HOST", value = "${var.project}-redis" },
+        { name = "APP_ENV", value = "production" },
+        { name = "DB_USERNAME", value = "smarthr" },
+        { name = "REDIS_PORT", value = "6379" },
+        { name = "DB_PORT", value = "3306" },
+        { name = "REDIS_CLIENT", value = "phpredis" },
+        { name = "APP_NAME", value = "Smarthr" },
         { name = "PHP_OPCACHE_VALIDATE_TIMESTAMPS", value = "0" },
-        { name = "REDIS_PASSWORD",                 value = "" },
-        { name = "APP_URL",                        value = "https://${var.app_domain}" },
-        { name = "APP_DEBUG",                      value = "false" },
-        { name = "DB_DATABASE",                    value = "smarthr" }
+        { name = "REDIS_PASSWORD", value = "" },
+        { name = "APP_URL", value = "https://${var.app_domain}" },
+        { name = "APP_DEBUG", value = "false" },
+        { name = "DB_DATABASE", value = "smarthr" }
       ]
 
       # Pulled from Secrets Manager at task startup
       secrets = [
-        { name = "DB_HOST",    valueFrom = var.db_host_secret_arn },
-        { name = "APP_KEY",    valueFrom = var.app_key_secret_arn },
+        { name = "DB_HOST", valueFrom = var.db_host_secret_arn },
+        { name = "APP_KEY", valueFrom = var.app_key_secret_arn },
         { name = "DB_PASSWORD", valueFrom = var.db_password_secret_arn }
       ]
 

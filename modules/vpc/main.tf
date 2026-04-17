@@ -49,8 +49,8 @@ resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
   depends_on    = [aws_internet_gateway.main]
-  
-  tags          = { Name = "${var.project}-nat" }
+
+  tags = { Name = "${var.project}-nat" }
 }
 
 # ── Route tables ──────────────────────────────────────────────────────────────
@@ -84,10 +84,23 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private.id
 }
 
+# ── KMS Key for VPC Logs Encryption ───────────────────────────────────────────
+resource "aws_kms_key" "vpc_logs" {
+  description             = "KMS key for VPC Flow Logs CloudWatch encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+}
+
+resource "aws_kms_alias" "vpc_logs" {
+  name          = "alias/${var.project}-vpc-logs"
+  target_key_id = aws_kms_key.vpc_logs.key_id
+}
+
 # ── VPC Flow Logs (Checkov: CKV2_AWS_11) ─────────────────────────────────────
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/${var.project}-flow-logs"
   retention_in_days = 30
+  kms_key_id        = aws_kms_key.vpc_logs.arn
 }
 
 resource "aws_iam_role" "vpc_flow_logs" {

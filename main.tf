@@ -75,7 +75,7 @@ module "ecs" {
   alb_sg_id              = module.alb.alb_sg_id
   db_host_secret_arn     = module.secrets.db_host_arn
   app_key_secret_arn     = module.secrets.app_key_arn
-  db_password_secret_arn = module.secrets.db_password_arn 
+  db_password_secret_arn = module.secrets.db_password_arn
   app_domain             = var.app_domain
   backend_image          = var.backend_image
   web_image              = var.web_image
