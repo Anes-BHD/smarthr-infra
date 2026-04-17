@@ -22,11 +22,18 @@ jobs:
   security:
     name: Security scan
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       # Checkov — config file is at repo root (.checkov.yaml)
+
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
@@ -38,9 +45,9 @@ jobs:
           soft_fail: false
         continue-on-error: false
 
-      - name: Upload Checkov SARIF
+      - name: Upload SARIF
+        if: github.event_name == 'push'
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
         with:
           sarif_file: checkov-results.sarif
 
