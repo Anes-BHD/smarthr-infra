@@ -179,7 +179,7 @@ jobs:
             });
  
   # ── 4. Terraform Apply (main branch only) ──────────────────────────────────
-apply:
+  apply:
     name: Apply
     runs-on: ubuntu-latest
     needs: [plan]
