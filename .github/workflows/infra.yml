@@ -53,6 +53,19 @@ jobs:
           soft_fail: false
           format: sarif
           sarif_file: tfsec-results.sarif
+      - name: Set Terraform variables
+        run: |
+          echo  "TF_VAR_alert_email=test@test.com" >> $GITHUB_ENV
+          echo "TF_VAR_app_key=dummy" >> $GITHUB_ENV
+          echo "TF_VAR_backend_image=dummy" >> $GITHUB_ENV
+          echo "TF_VAR_certificate_arn=dummy" >> $GITHUB_ENV
+          echo "TF_VAR_db_password=dummy" >> $GITHUB_ENV
+          echo "TF_VAR_redis_image=dummy" >> $GITHUB_ENV
+          echo "TF_VAR_web_image=dummy" >> $GITHUB_ENV
+
+
+
+
 
       # Trivy
       - name: Run Trivy IaC scan
