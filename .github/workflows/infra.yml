@@ -6,16 +6,16 @@ on:
   pull_request:
     branches: [main]
 
-
 permissions:
   contents: read
-  pull-requests: write   # needed to post plan output as PR comment
-  security-events: write # needed for SARIF upload to GitHub Security tab
+  pull-requests: write
+  security-events: write
 
 env:
   TF_VERSION: "1.7.0"
-  WORKING_DIR: "./smarthr-infra"
   AWS_REGION: "us-east-1"
+  # Terraform files are at the repo root — no subdirectory
+  WORKING_DIR: "."
 
 jobs:
   # ── 1. Security Scanning ────────────────────────────────────────────────────
@@ -26,25 +26,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Checkov — comprehensive IaC security scanner
+      # Checkov — config file is at repo root (.checkov.yaml)
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: ${{ env.WORKING_DIR }}
           framework: terraform
-          config_file: ${{ env.WORKING_DIR }}/.checkov.yaml
+          config_file: .checkov.yaml
           output_format: cli,sarif
           output_file_path: console,checkov-results.sarif
           soft_fail: false
         continue-on-error: false
 
-      - name: Upload Checkov SARIF to GitHub Security tab
+      - name: Upload Checkov SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: checkov-results.sarif
 
-      # tfsec — additional Terraform-specific checks
+      # tfsec
       - name: Run tfsec
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
@@ -53,13 +53,13 @@ jobs:
           format: sarif
           sarif_file: tfsec-results.sarif
 
-      - name: Upload tfsec SARIF to GitHub Security tab
+      - name: Upload tfsec SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: tfsec-results.sarif
 
-      # trivy — scans for misconfigurations and secrets
+      # Trivy
       - name: Run Trivy IaC scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -70,7 +70,7 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
 
-      - name: Upload Trivy SARIF to GitHub Security tab
+      - name: Upload Trivy SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
@@ -97,16 +97,13 @@ jobs:
           aws-region:            ${{ env.AWS_REGION }}
 
       - name: Terraform fmt check
-        working-directory: ${{ env.WORKING_DIR }}
         run: terraform fmt -check -recursive
-        # Fails if any file is not formatted — run `terraform fmt -recursive` locally to fix
+        # Files are at repo root — no working-directory needed
 
       - name: Terraform init
-        working-directory: ${{ env.WORKING_DIR }}
         run: terraform init -input=false
 
       - name: Terraform validate
-        working-directory: ${{ env.WORKING_DIR }}
         run: terraform validate
 
   # ── 3. Terraform Plan ───────────────────────────────────────────────────────
@@ -137,12 +134,10 @@ jobs:
           aws-region:            ${{ env.AWS_REGION }}
 
       - name: Terraform init
-        working-directory: ${{ env.WORKING_DIR }}
         run: terraform init -input=false
 
       - name: Terraform plan
         id: plan
-        working-directory: ${{ env.WORKING_DIR }}
         run: |
           terraform plan \
             -input=false \
@@ -152,24 +147,22 @@ jobs:
           echo "exitcode=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
         continue-on-error: true
 
-        
       - name: Save plan artifact
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
           path: |
-            ${{ env.WORKING_DIR }}/tfplan
-            ${{ env.WORKING_DIR }}/plan-output.txt
+            tfplan
+            plan-output.txt
           retention-days: 5
 
-      # Post plan output as PR comment
       - name: Comment plan on PR
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('${{ env.WORKING_DIR }}/plan-output.txt', 'utf8');
+            const plan = fs.readFileSync('plan-output.txt', 'utf8');
             const truncated = plan.length > 60000
               ? plan.substring(0, 60000) + '\n... (truncated)'
               : plan;
@@ -191,7 +184,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [plan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production   # requires manual approval in GitHub Environments
+    environment: production
     env:
       TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
       TF_VAR_app_key:     ${{ secrets.APP_KEY }}
@@ -213,19 +206,16 @@ jobs:
           aws-region:            ${{ env.AWS_REGION }}
 
       - name: Terraform init
-        working-directory: ${{ env.WORKING_DIR }}
         run: terraform init -input=false
 
       - name: Download plan artifact
         uses: actions/download-artifact@v4
         with:
           name: tfplan
-          path: ${{ env.WORKING_DIR }}
+          path: .
 
       - name: Terraform apply
-        working-directory: ${{ env.WORKING_DIR }}
         run: terraform apply -input=false -auto-approve tfplan
 
-      - name: Output ALB DNS name
-        working-directory: ${{ env.WORKING_DIR }}
+      - name: Output ALB DNS
         run: terraform output alb_dns_name
