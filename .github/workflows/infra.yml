@@ -69,15 +69,15 @@ jobs:
           exit-code: "1"
 
       - name: Upload scan results as artifact
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-         name: security-scan-results
-         path: |
-          checkov-results.sarif
-          tfsec-results.sarif
-          trivy-results.sarif
-        retention-days: 30
+         uses: actions/upload-artifact@v4
+         if: always()
+         with:
+           name: security-scan-results
+           path: |
+             checkov-results.sarif
+             tfsec-results.sarif
+             trivy-results.sarif
+          retention-days: 30
 
   # ── 2. Terraform Validate & Format ─────────────────────────────────────────
   validate:
