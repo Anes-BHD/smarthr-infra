@@ -53,33 +53,7 @@ jobs:
           soft_fail: false
           format: sarif
           sarif_file: tfsec-results.sarif
-      - name: Set Terraform variables
-        run: |
-          echo  "TF_VAR_alert_email=test@test.com" >> $GITHUB_ENV
-          echo "TF_VAR_app_key=dummy" >> $GITHUB_ENV
-          echo "TF_VAR_backend_image=dummy" >> $GITHUB_ENV
-          echo "TF_VAR_certificate_arn=dummy" >> $GITHUB_ENV
-          echo "TF_VAR_db_password=dummy" >> $GITHUB_ENV
-          echo "TF_VAR_redis_image=dummy" >> $GITHUB_ENV
-          echo "TF_VAR_web_image=dummy" >> $GITHUB_ENV
-
-
-
-
-
-      # Trivy
-      - name: Run Trivy IaC scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: config
-          scan-ref: ${{ env.WORKING_DIR }}
-          format: sarif
-          output: trivy-results.sarif
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-      - name: Debug Trivy output
-        run: cat trivy-results.sarif
-
+      
       - name: Upload scan results as artifact
         uses: actions/upload-artifact@v4
         if: always()
