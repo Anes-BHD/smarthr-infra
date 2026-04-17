@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -178,11 +179,11 @@ jobs:
             });
  
   # ── 4. Terraform Apply (main branch only) ──────────────────────────────────
-  apply:
+apply:
     name: Apply
     runs-on: ubuntu-latest
     needs: [plan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch'
     environment: production
     env:
       TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
