@@ -5,7 +5,7 @@ resource "aws_security_group" "alb" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "HTTP — redirects to HTTPS"
+    description = "HTTP - redirects to HTTPS"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
