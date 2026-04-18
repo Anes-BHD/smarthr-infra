@@ -1,3 +1,8 @@
+# ── Data Source for Current AWS Account ───────────────────────────────────────
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
 # ── KMS Key for Encryption ────────────────────────────────────────────────────
 resource "aws_kms_key" "ecs" {
   description             = "KMS key for ECS CloudWatch logs encryption"
@@ -8,6 +13,41 @@ resource "aws_kms_key" "ecs" {
 resource "aws_kms_alias" "ecs" {
   name          = "alias/${var.project}-ecs"
   target_key_id = aws_kms_key.ecs.key_id
+}
+
+# ── KMS Key Policy for CloudWatch Logs ─────────────────────────────────────────
+resource "aws_kms_key_policy" "ecs" {
+  key_id = aws_kms_key.ecs.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM policies"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudWatch Logs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 # ── CloudWatch Log Group ──────────────────────────────────────────────────────
