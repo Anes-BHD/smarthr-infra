@@ -121,4 +121,3 @@ terraform apply -target=module.ecs
 # View outputs
 terraform output alb_dns_name
 ```
-..
