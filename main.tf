@@ -59,9 +59,20 @@ module "rds" {
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
   db_password        = var.db_password
-  app_sg_id          = module.ecs.app_sg_id
+  app_sg_id          = ""
 
   depends_on = [module.vpc]
+}
+
+# Create the security group rule after both rds and ecs modules are created
+resource "aws_security_group_rule" "rds_ingress_from_ecs" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  source_security_group_id = module.ecs.app_sg_id
+  security_group_id        = module.rds.security_group_id
+  description              = "MySQL from ECS app tasks"
 }
 
 module "ecs" {
