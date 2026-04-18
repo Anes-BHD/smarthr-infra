@@ -59,8 +59,9 @@ module "rds" {
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
   db_password        = var.db_password
-  # app_sg_id is intentionally omitted to break circular dependency
-  # It will be connected via aws_security_group_rule below
+  app_sg_id          = module.ecs.app_sg_id
+
+  depends_on = [module.vpc]
 }
 
 module "ecs" {
@@ -83,25 +84,3 @@ module "ecs" {
   depends_on = [module.alb, module.secrets]
 }
 
-module "monitoring" {
-  source       = "./modules/monitoring"
-  project      = var.project
-  environment  = var.environment
-  cluster_name = module.ecs.cluster_name
-  alb_arn      = module.alb.alb_arn
-  rds_id       = module.rds.db_instance_id
-  alert_email  = var.alert_email
-}
-
-# ── RDS ↔ ECS Security Group Link (breaks circular dependency) ──────────────────
-resource "aws_security_group_rule" "rds_from_app" {
-  type                     = "ingress"
-  from_port                = 3306
-  to_port                  = 3306
-  protocol                 = "tcp"
-  source_security_group_id = module.ecs.app_sg_id
-  security_group_id        = module.rds.security_group_id
-  description              = "MySQL from ECS app tasks to RDS"
-
-  depends_on = [module.rds, module.ecs]
-}

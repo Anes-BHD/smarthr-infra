@@ -59,8 +59,3 @@ variable "redis_image" {
   description = "ECR URI for Redis image"
   type        = string
 }
-
-variable "alert_email" {
-  description = "Email address for CloudWatch alarm notifications"
-  type        = string
-}
