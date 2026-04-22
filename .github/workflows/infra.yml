@@ -20,6 +20,7 @@ env:
   WORKING_DIR: "."
 
 jobs:
+
   # ── 1. Security Scanning ────────────────────────────────────────────────────
   security:
     name: Security scan
@@ -34,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Checkov — config file is at repo root (.checkov.yaml)
+      # ── Checkov ─────────────────────────────────────────────────────────────
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
@@ -44,9 +45,8 @@ jobs:
           output_format: cli,sarif
           output_file_path: console,checkov-results.sarif
           soft_fail: false
-        continue-on-error: false
 
-      # tfsec
+      # ── tfsec ───────────────────────────────────────────────────────────────
       - name: Run tfsec
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
@@ -55,7 +55,20 @@ jobs:
           format: sarif
           sarif_file: tfsec-results.sarif
 
+      # ── Upload SARIF to GitHub Security (CRITICAL STEP) ─────────────────────
+      - name: Upload Checkov SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
 
+      - name: Upload tfsec SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: tfsec-results.sarif
+
+      # ── Optional: keep artifacts for debugging ──────────────────────────────
       - name: Upload scan results as artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -64,9 +77,7 @@ jobs:
           path: |
             checkov-results.sarif
             tfsec-results.sarif
-            trivy-results.sarif
           retention-days: 30
-
   # ── 2. Terraform Validate & Format ─────────────────────────────────────────
   validate:
     name: Validate
