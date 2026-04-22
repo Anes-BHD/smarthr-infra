@@ -36,7 +36,7 @@ resource "aws_security_group" "alb" {
 # Checkov CKV_AWS_150: deletion protection enabled
 resource "aws_s3_bucket" "alb_logs" {
   bucket        = "${var.project}-alb-access-logs"
-  force_destroy = false
+  force_destroy = true
   tags          = { Name = "${var.project}-alb-logs" }
 }
 
@@ -118,7 +118,7 @@ resource "aws_lb" "main" {
   load_balancer_type         = "application"
   subnets                    = var.public_subnet_ids
   security_groups            = [aws_security_group.alb.id]
-  enable_deletion_protection = true
+  enable_deletion_protection = false
   drop_invalid_header_fields = true
 
   access_logs {
@@ -200,7 +200,7 @@ resource "aws_lb_target_group" "app" {
   target_type = "ip"
 
   health_check {
-    path                = "/UP"
+    path                = "/up"
     protocol            = "HTTP"
     healthy_threshold   = 2
     unhealthy_threshold = 3

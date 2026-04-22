@@ -1,5 +1,5 @@
 output "alb_dns_name" {
-  description = "ALB DNS name — use this as the CNAME target in GoDaddy"
+  description = "ALB DNS name — used as Alias target in Route 53"
   value       = module.alb.alb_dns_name
 }
 
@@ -17,4 +17,14 @@ output "rds_endpoint" {
 output "ecs_cluster_name" {
   description = "ECS cluster name"
   value       = module.ecs.cluster_name
+}
+
+output "app_url" {
+  description = "Application URL"
+  value       = "https://${module.dns.smarthr_fqdn}"
+}
+
+output "route53_name_servers" {
+  description = "Route 53 NS records — must match GoDaddy nameservers"
+  value       = module.dns.name_servers
 }

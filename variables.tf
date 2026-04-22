@@ -22,11 +22,6 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/24"
 }
 
-variable "certificate_arn" {
-  description = "ACM certificate ARN for HTTPS listener"
-  type        = string
-}
-
 variable "app_domain" {
   description = "Application domain name"
   type        = string
@@ -59,3 +54,4 @@ variable "redis_image" {
   description = "ECR URI for Redis image"
   type        = string
 }
+

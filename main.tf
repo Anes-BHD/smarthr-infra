@@ -36,20 +36,21 @@ module "vpc" {
 module "secrets" {
   source      = "./modules/secrets"
   project     = var.project
-  db_host     = module.rds.endpoint
+  db_host     = aws_db_instance.main.address
   app_key     = var.app_key
   db_password = var.db_password
 
   depends_on = [module.rds]
 }
-
 module "alb" {
   source            = "./modules/alb"
   project           = var.project
   environment       = var.environment
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
-  certificate_arn   = var.certificate_arn
+  certificate_arn   = module.acm.certificate_arn
+
+  depends_on = [module.acm]
 }
 
 module "rds" {
@@ -64,7 +65,6 @@ module "rds" {
   depends_on = [module.vpc]
 }
 
-# Create the security group rule after both rds and ecs modules are created
 resource "aws_security_group_rule" "rds_ingress_from_ecs" {
   type                     = "ingress"
   from_port                = 3306
@@ -95,3 +95,22 @@ module "ecs" {
   depends_on = [module.alb, module.secrets]
 }
 
+module "dns" {
+  source        = "./modules/dns"
+  root_domain   = "anesbhd.com"
+  app_subdomain = var.app_domain
+  alb_dns_name  = module.alb.alb_dns_name
+  alb_zone_id   = module.alb.alb_zone_id
+
+  depends_on = [module.alb]
+}
+
+module "acm" {
+  source        = "./modules/acm"
+  project       = var.project
+  root_domain   = "anesbhd.com"
+  app_subdomain = var.app_domain
+  zone_id       = module.dns.zone_id
+
+  depends_on = [module.dns]
+}

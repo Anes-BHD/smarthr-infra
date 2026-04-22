@@ -83,7 +83,7 @@ resource "aws_db_instance" "main" {
   auto_minor_version_upgrade = true
 
   deletion_protection       = true
-  skip_final_snapshot       = false
+  skip_final_snapshot       = true
   final_snapshot_identifier = "${var.project}-final-snapshot"
 
   performance_insights_enabled = false
