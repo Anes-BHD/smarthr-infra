@@ -55,23 +55,7 @@ jobs:
         run: |
           tfsec . --format sarif --out tfsec-results.sarif || true
 
-      # ── Upload to GitHub Security ───────────
-      - name: Upload Checkov SARIF
-        uses: github/codeql-action/upload-sarif@v4
-        if: |
-          always() &&
-          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
-          hashFiles('checkov-results.sarif') != ''
-        with:
-          sarif_file: checkov-results.sarif
-
-      - name: Upload tfsec SARIF
-        uses: github/codeql-action/upload-sarif@v4
-        if: always() && hashFiles('tfsec-results.sarif') != ''
-        with:
-          sarif_file: tfsec-results.sarif
-
-      # ── Artifact (optional) ─────────────────
+      # ── Artifact  ─────────────────
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
