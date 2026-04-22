@@ -36,7 +36,7 @@ module "vpc" {
 module "secrets" {
   source      = "./modules/secrets"
   project     = var.project
-  db_host     = aws_db_instance.main.address
+  db_host     = module.rds.db_instance_address
   app_key     = var.app_key
   db_password = var.db_password
 
