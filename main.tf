@@ -42,16 +42,6 @@ module "secrets" {
 
   depends_on = [module.rds]
 }
-module "alb" {
-  source            = "./modules/alb"
-  project           = var.project
-  environment       = var.environment
-  vpc_id            = module.vpc.vpc_id
-  public_subnet_ids = module.vpc.public_subnet_ids
-  certificate_arn   = module.acm.certificate_arn
-
-  depends_on = [module.acm]
-}
 
 module "rds" {
   source             = "./modules/rds"
@@ -95,6 +85,12 @@ module "ecs" {
   depends_on = [module.alb, module.secrets]
 }
 
+module "dns_zone" {
+  source      = "./modules/dns_zone"
+  root_domain = "anesbhd.com"
+}
+
+
 module "dns" {
   source        = "./modules/dns"
   root_domain   = "anesbhd.com"
@@ -105,12 +101,34 @@ module "dns" {
   depends_on = [module.alb]
 }
 
+module "dns_record" {
+  source        = "./modules/dns_record"
+  zone_id       = module.dns_zone.zone_id
+  app_subdomain = var.app_domain
+  alb_dns_name  = module.alb.alb_dns_name
+  alb_zone_id   = module.alb.alb_zone_id
+  name_servers  = module.dns_zone.name_servers
+
+  depends_on = [module.alb]
+}
+
+
 module "acm" {
   source        = "./modules/acm"
   project       = var.project
   root_domain   = "anesbhd.com"
   app_subdomain = var.app_domain
-  zone_id       = module.dns.zone_id
+  zone_id       = module.dns_zone.zone_id
 
-  depends_on = [module.dns]
+  depends_on = [module.dns_zone]
+}
+module "alb" {
+  source            = "./modules/alb"
+  project           = var.project
+  environment       = var.environment
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  certificate_arn   = module.acm.certificate_arn
+
+  depends_on = [module.acm]
 }
