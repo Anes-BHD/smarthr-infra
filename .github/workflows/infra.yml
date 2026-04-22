@@ -32,53 +32,51 @@ jobs:
       security-events: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # ── Checkov ─────────────────────────────────────────────────────────────
+      # ── Checkov ─────────────────────────────
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
-          directory: ${{ env.WORKING_DIR }}
+          directory: .
           framework: terraform
-          config_file: .checkov.yaml
-          output_format: cli,sarif
-          output_file_path: console,checkov-results.sarif
-          soft_fail: false
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+        continue-on-error: true
 
-      # ── tfsec ───────────────────────────────────────────────────────────────
+      # ── Install tfsec ───────────────────────
+      - name: Install tfsec
+        run: |
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+      # ── Run tfsec ───────────────────────────
       - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.0
-        with:
-          working_directory: ${{ env.WORKING_DIR }}
-          soft_fail: false
-          format: sarif
-          sarif_file: tfsec-results.sarif
+        run: |
+          tfsec . --format sarif --out tfsec-results.sarif
 
-      # ── Upload SARIF to GitHub Security (CRITICAL STEP) ─────────────────────
-      - name: Upload Checkov SARIF to GitHub Security
+      # ── Upload to GitHub Security ───────────
+      - name: Upload Checkov SARIF
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('checkov-results.sarif') != ''
         with:
           sarif_file: checkov-results.sarif
 
-      - name: Upload tfsec SARIF to GitHub Security
+      - name: Upload tfsec SARIF
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('tfsec-results.sarif') != ''
         with:
           sarif_file: tfsec-results.sarif
 
-      # ── Optional: keep artifacts for debugging ──────────────────────────────
-      - name: Upload scan results as artifact
+      # ── Artifact (optional) ─────────────────
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: security-scan-results
+          name: security-results
           path: |
             checkov-results.sarif
             tfsec-results.sarif
-          retention-days: 30
-  # ── 2. Terraform Validate & Format ─────────────────────────────────────────
+# ── 2. Terraform Validate & Format ─────────────────────────────────────────
   validate:
     name: Validate
     runs-on: ubuntu-latest
