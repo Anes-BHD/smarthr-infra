@@ -28,8 +28,9 @@ jobs:
 
     permissions:
       contents: read
-      pull-requests: write
       security-events: write
+      actions: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -52,12 +53,15 @@ jobs:
       # ── Run tfsec ───────────────────────────
       - name: Run tfsec
         run: |
-          tfsec . --format sarif --out tfsec-results.sarif
+          tfsec . --format sarif --out tfsec-results.sarif || true
 
       # ── Upload to GitHub Security ───────────
       - name: Upload Checkov SARIF
         uses: github/codeql-action/upload-sarif@v4
-        if: always() && hashFiles('checkov-results.sarif') != ''
+        if: |
+          always() &&
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+          hashFiles('checkov-results.sarif') != ''
         with:
           sarif_file: checkov-results.sarif
 
