@@ -48,7 +48,9 @@ jobs:
       # ── Install tfsec ───────────────────────
       - name: Install tfsec
         run: |
-          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          curl -sLo tfsec https://github.com/aquasecurity/tfsec/releases/download/v1.28.14/tfsec-linux-amd64
+          chmod +x tfsec
+          sudo mv tfsec /usr/local/bin/
 
       # ── Run tfsec ───────────────────────────
       - name: Run tfsec
@@ -86,7 +88,6 @@ jobs:
 
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
-        # Files are at repo root — no working-directory needed
 
       - name: Terraform init
         run: terraform init -input=false
