@@ -62,7 +62,7 @@ resource "aws_db_instance" "main" {
   engine            = "mysql"
   engine_version    = "8.0"
   instance_class    = "db.t3.micro"
-  allocated_storage = 20
+  allocated_storage = 50
   storage_type      = "gp2"
   storage_encrypted = true
 

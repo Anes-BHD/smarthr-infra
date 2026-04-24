@@ -21,12 +21,7 @@ output "ecs_cluster_name" {
 
 output "app_url" {
   description = "Application URL"
-  value       = "https://${module.dns_record.smarthr_fqdn}"
-}
-
-output "route53_name_servers" {
-  description = "Route 53 NS records — update GoDaddy if zone was recreated"
-  value       = module.dns_zone.name_servers
+  value       = "https://${module.dns.smarthr_fqdn}"
 }
 
 output "certificate_arn" {

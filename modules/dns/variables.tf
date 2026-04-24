@@ -1,7 +1,6 @@
-variable "root_domain" {
-  description = "Root domain name managed in Route 53 (e.g. anesbhd.com)"
+variable "zone_id" {
+  description = "Route 53 hosted zone ID"
   type        = string
-  default     = "anesbhd.com"
 }
 
 variable "app_subdomain" {
