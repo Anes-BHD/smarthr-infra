@@ -85,14 +85,13 @@ module "ecs" {
   depends_on = [module.alb, module.secrets]
 }
 
-data "aws_route53_zone" "main" {
-  name         = "anesbhd.com"
-  private_zone = false
+resource "aws_route53_zone" "main" {
+  name = "anesbhd.com"
 }
 
 module "dns" {
   source        = "./modules/dns"
-  zone_id       = data.aws_route53_zone.main.zone_id
+  zone_id       = aws_route53_zone.main.zone_id
   app_subdomain = var.app_domain
   alb_dns_name  = module.alb.alb_dns_name
   alb_zone_id   = module.alb.alb_zone_id
@@ -105,7 +104,7 @@ module "acm" {
   project       = var.project
   root_domain   = "anesbhd.com"
   app_subdomain = var.app_domain
-  zone_id       = data.aws_route53_zone.main.zone_id
+  zone_id       = aws_route53_zone.main.zone_id
 }
 module "alb" {
   source            = "./modules/alb"

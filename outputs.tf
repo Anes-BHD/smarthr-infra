@@ -33,3 +33,8 @@ output "certificate_status" {
   description = "ACM certificate status — should be ISSUED"
   value       = module.acm.certificate_status
 }
+
+output "route53_name_servers" {
+  description = "Route 53 NS records — update registrar"
+  value       = aws_route53_zone.main.name_servers
+}
