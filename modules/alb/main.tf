@@ -45,42 +45,6 @@ resource "aws_s3_bucket_versioning" "alb_logs" {
   versioning_configuration { status = "Enabled" }
 }
 
-# ── S3 Logging Bucket for ALB Logs (CKV_AWS_18) ────────────────────────────────
-resource "aws_s3_bucket" "alb_logs_logging" {
-  bucket        = "${var.project}-alb-logs-logging"
-  force_destroy = false
-  tags          = { Name = "${var.project}-alb-logs-logging" }
-}
-
-resource "aws_s3_bucket_versioning" "alb_logs_logging" {
-  bucket = aws_s3_bucket.alb_logs_logging.id
-  versioning_configuration { status = "Enabled" }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs_logging" {
-  bucket = aws_s3_bucket.alb_logs_logging.id
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "alb_logs_logging" {
-  bucket                  = aws_s3_bucket.alb_logs_logging.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-# ── Add Logging to ALB Logs Bucket (CKV_AWS_18) ────────────────────────────────
-resource "aws_s3_bucket_logging" "alb_logs" {
-  bucket        = aws_s3_bucket.alb_logs.id
-  target_bucket = aws_s3_bucket.alb_logs_logging.id
-  target_prefix = "alb-logs/"
-}
-
 resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
   rule {
