@@ -162,8 +162,8 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
 }
 
 # ── IAM Task Role (separate from Execution Role for CKV_AWS_249) ──────────────
-resource "aws_iam_role" "ecs_task" {
-  name = "${var.project}-ecs-task-role"
+resource "aws_iam_role" "ecs_monitoring" {
+  name = "${var.project}-ecs-monitoring-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -174,9 +174,9 @@ resource "aws_iam_role" "ecs_task" {
   })
 }
 
-resource "aws_iam_role_policy" "ecs_task_permissions" {
-  name = "${var.project}-ecs-task-policy"
-  role = aws_iam_role.ecs_task.id
+resource "aws_iam_role_policy" "ecs_monitoring_permissions" {
+  name = "${var.project}-ecs-monitoring-policy"
+  role = aws_iam_role.ecs_monitoring.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -216,7 +216,7 @@ resource "aws_ecs_task_definition" "cache" {
   cpu                      = "512"
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
+  task_role_arn            = aws_iam_role.ecs_monitoring.arn
 
   runtime_platform {
     cpu_architecture        = "X86_64"
@@ -266,7 +266,7 @@ resource "aws_ecs_task_definition" "app" {
   cpu                      = "4096"
   memory                   = "8192"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
+  task_role_arn            = aws_iam_role.ecs_monitoring.arn
 
   runtime_platform {
     cpu_architecture        = "X86_64"
