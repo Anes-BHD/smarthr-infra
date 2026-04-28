@@ -109,10 +109,15 @@ jobs:
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           attachments: checkov-summary.txt,tfsec-summary.txt,checkov-results.sarif,tfsec-results.sarif
 
-# ── 2. Terraform Validate & Format ─────────────────────────────────────────
-  validate:
-    name: Validate
+
+  validate-and-plan:
+    name: Validate & Plan
     runs-on: ubuntu-latest
+    needs: [security]
+    env:
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      TF_VAR_app_key:     ${{ secrets.APP_KEY }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -138,35 +143,6 @@ jobs:
       - name: Terraform validate
         run: terraform validate
 
-# ── 3. Terraform Plan ───────────────────────────────────────────────────────
-  
-  plan:
-    name: Plan
-    runs-on: ubuntu-latest
-    needs: [security, validate]
-    env:
-      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
-      TF_VAR_app_key:     ${{ secrets.APP_KEY }}
- 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
- 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
- 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
- 
-      - name: Terraform init
-        run: terraform init -input=false
- 
       - name: Terraform plan
         id: plan
         run: |
@@ -179,17 +155,13 @@ jobs:
             2>&1 | tee plan-output.txt
           PLAN_EXIT=${PIPESTATUS[0]}
           echo "exitcode=$PLAN_EXIT" >> $GITHUB_OUTPUT
- 
-          # Exit codes:
-          #   0 = success, no changes
-          #   1 = error (real terraform failure) → fail the job
-          #   2 = success, changes detected → continue normally
+
           if [ $PLAN_EXIT -eq 1 ]; then
             echo "::error::Terraform plan encountered an error"
             exit 1
           fi
           exit 0
- 
+
       - name: Save plan artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -228,7 +200,7 @@ jobs:
   apply:
     name: Apply
     runs-on: ubuntu-latest
-    needs: [plan]
+    needs: [validate-and-plan]
     if: github.event_name == 'workflow_dispatch'
     environment: production
     env:
