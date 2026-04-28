@@ -186,7 +186,7 @@ jobs:
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "Terraform Plan — ${{ github.repository }} (${{ steps.plan.outputs.exitcode == '2' && 'Changes detected' || 'No changes' }})"
-          to: benhenda.anes@gmail.com
+          to: anes.bhd12@gmail.com
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
           body: |
             Terraform plan completed for commit ${{ github.sha }}.
