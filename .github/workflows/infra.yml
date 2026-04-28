@@ -132,6 +132,7 @@ jobs:
             -input=false \
             -out=tfplan \
             -detailed-exitcode \
+            -no-color \
             2>&1 | tee plan-output.txt
           PLAN_EXIT=${PIPESTATUS[0]}
           echo "exitcode=$PLAN_EXIT" >> $GITHUB_OUTPUT
@@ -155,26 +156,6 @@ jobs:
             tfplan
             plan-output.txt
           retention-days: 5
- 
-      - name: Comment plan on PR
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            const fs = require('fs');
-            const plan = fs.readFileSync('plan-output.txt', 'utf8');
-            const truncated = plan.length > 60000
-              ? plan.substring(0, 60000) + '\n... (truncated)'
-              : plan;
-            const exitcode = '${{ steps.plan.outputs.exitcode }}';
-            const icon = exitcode === '2' ? '⚠️ Changes detected' : '✅ No changes';
-            const body = `## Terraform Plan — ${icon}\n\`\`\`hcl\n${truncated}\n\`\`\``;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
 
       - name: Email plan output
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
