@@ -42,8 +42,19 @@ jobs:
           directory: .
           framework: terraform
           output_format: sarif
-          output_file_path: checkov-results.sarif
+          output_file_path: checkov-sarif-output
         continue-on-error: true
+
+      - name: Locate Checkov SARIF
+        run: |
+          # The action writes results_sarif.sarif inside the output dir
+          if [ -f checkov-sarif-output/results_sarif.sarif ]; then
+            cp checkov-sarif-output/results_sarif.sarif checkov-results.sarif
+          else
+            echo "Checkov SARIF not found, creating empty file"
+            echo '{}' > checkov-results.sarif
+          fi
+          ls -la checkov-results.sarif
 
       - name: Run Checkov (text summary for email)
         run: |
