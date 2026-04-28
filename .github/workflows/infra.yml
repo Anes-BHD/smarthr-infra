@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
 
       # ── Checkov ─────────────────────────────
-      - name: Run Checkov
+      - name: Run Checkov (SARIF)
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: .
@@ -45,6 +45,11 @@ jobs:
           output_file_path: checkov-results.sarif
         continue-on-error: true
 
+      - name: Run Checkov (text summary for email)
+        run: |
+          pip install checkov --quiet
+          checkov -d . --framework terraform --compact --quiet > checkov-summary.txt 2>&1 || true
+
       # ── Install tfsec ───────────────────────
       - name: Install tfsec
         run: |
@@ -52,12 +57,14 @@ jobs:
           chmod +x tfsec
           sudo mv tfsec /usr/local/bin/
 
-      # ── Run tfsec ───────────────────────────
-      - name: Run tfsec
-        run: |
-          tfsec . --format sarif --out tfsec-results.sarif || true
+      # ── Run tfsec (SARIF + text) ────────────
+      - name: Run tfsec (SARIF)
+        run: tfsec . --format sarif --out tfsec-results.sarif --no-color || true
 
-      # ── Artifact  ─────────────────
+      - name: Run tfsec (text summary for email)
+        run: tfsec . --no-color > tfsec-summary.txt 2>&1 || true
+
+      # ── Artifact upload ─────────────────────
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -66,6 +73,31 @@ jobs:
           path: |
             checkov-results.sarif
             tfsec-results.sarif
+            checkov-summary.txt
+            tfsec-summary.txt
+
+      # ── Email security results ──────────────
+      - name: Email security scan results
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Security Scan — ${{ github.repository }} (commit ${{ github.sha }})"
+          to: benhenda.anes@gmail.com
+          from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            Security scan completed for commit ${{ github.sha }} on ${{ github.ref_name }}.
+
+            Checkov and tfsec results are attached as both human-readable summaries
+            (.txt) and SARIF files (.sarif) for tool integration.
+
+            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          attachments: checkov-summary.txt,tfsec-summary.txt,checkov-results.sarif,tfsec-results.sarif
+
 # ── 2. Terraform Validate & Format ─────────────────────────────────────────
   validate:
     name: Validate
@@ -95,7 +127,7 @@ jobs:
       - name: Terraform validate
         run: terraform validate
 
-  # ── 3. Terraform Plan ───────────────────────────────────────────────────────
+# ── 3. Terraform Plan ───────────────────────────────────────────────────────
   
   plan:
     name: Plan
@@ -167,7 +199,7 @@ jobs:
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "Terraform Plan — ${{ github.repository }} (${{ steps.plan.outputs.exitcode == '2' && 'Changes detected' || 'No changes' }})"
-          to: anes.bhd12@gmail.com
+          to: benhenda.anes@gmail.com
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
           body: |
             Terraform plan completed for commit ${{ github.sha }}.
