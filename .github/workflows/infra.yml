@@ -175,7 +175,31 @@ jobs:
               repo: context.repo.repo,
               body
             });
- 
+
+      - name: Email plan output
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Terraform Plan — ${{ github.repository }} (${{ steps.plan.outputs.exitcode == '2' && 'Changes detected' || 'No changes' }})"
+          to: benhenda.anes@gmail.com
+          from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            Terraform plan completed for commit ${{ github.sha }}.
+            Exit code: ${{ steps.plan.outputs.exitcode }} (0 = no changes, 2 = changes detected)
+
+            To approve and apply, go to:
+            ${{ github.server_url }}/${{ github.repository }}/actions/workflows/infra.yml
+
+            Then click "Run workflow" on the main branch.
+
+            Plan output is attached.
+          attachments: plan-output.txt  
+
   # ── 4. Terraform Apply (main branch only) ─────────────────────────────────────────────────────────────
   apply:
     name: Apply
