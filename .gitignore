@@ -26,3 +26,5 @@ Thumbs.db
 # Checkov output
 checkov-results/
 checkov-report.xml
+terraform.tfvars
+*.tfvars
