@@ -55,3 +55,31 @@ variable "redis_image" {
   type        = string
 }
 
+variable "agent_image" {
+  description = "ECR URI for agent (chatbot) image"
+  type        = string
+}
+
+variable "agent_token" {
+  description = "SMARTHR_AGENT_TOKEN — agent authentication token"
+  type        = string
+  sensitive   = true
+}
+
+variable "backend_token" {
+  description = "SMARTHR_BACKEND_TOKEN — Sanctum API token for agent → backend calls"
+  type        = string
+  sensitive   = true
+}
+
+variable "openrouter_api_key" {
+  description = "OPENROUTER_API_KEY — API key for OpenRouter LLM routing"
+  type        = string
+  sensitive   = true
+}
+
+variable "openrouter_model" {
+  description = "OPENROUTER_MODEL — model identifier used by the agent (e.g. openai/gpt-4o-mini)"
+  type        = string
+  sensitive   = true
+}

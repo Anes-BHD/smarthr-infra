@@ -40,6 +40,12 @@ module "secrets" {
   app_key     = var.app_key
   db_password = var.db_password
 
+  # Agent secrets
+  agent_token        = var.agent_token
+  backend_token      = var.backend_token
+  openrouter_api_key = var.openrouter_api_key
+  openrouter_model   = var.openrouter_model
+
   depends_on = [module.rds]
 }
 
@@ -81,6 +87,13 @@ module "ecs" {
   backend_image          = var.backend_image
   web_image              = var.web_image
   redis_image            = var.redis_image
+  agent_image            = var.agent_image
+
+  # Agent secret ARNs
+  agent_token_secret_arn        = module.secrets.agent_token_arn
+  backend_token_secret_arn      = module.secrets.backend_token_arn
+  openrouter_api_key_secret_arn = module.secrets.openrouter_api_key_arn
+  openrouter_model_secret_arn   = module.secrets.openrouter_model_arn
 
   depends_on = [module.alb, module.secrets]
 }
@@ -115,4 +128,9 @@ module "alb" {
   certificate_arn   = module.acm.certificate_arn
 
   depends_on = [module.acm]
+}
+
+module "ecr" {
+  source  = "./modules/ecr"
+  project = var.project
 }

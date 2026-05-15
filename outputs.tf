@@ -38,3 +38,23 @@ output "route53_name_servers" {
   description = "Route 53 NS records — update registrar"
   value       = aws_route53_zone.main.name_servers
 }
+
+output "web_ecr_repo_url" {
+  description = "ECR repository URL for the web container"
+  value       = module.ecr.web_repository_url
+}
+
+output "backend_ecr_repo_url" {
+  description = "ECR repository URL for the backend container"
+  value       = module.ecr.backend_repository_url
+}
+
+output "redis_ecr_repo_url" {
+  description = "ECR repository URL for the redis container"
+  value       = module.ecr.redis_repository_url
+}
+
+output "agent_ecr_repo_url" {
+  description = "ECR repository URL for the agent container"
+  value       = module.ecr.agent_repository_url
+}

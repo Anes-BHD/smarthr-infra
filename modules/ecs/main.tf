@@ -121,6 +121,30 @@ resource "aws_security_group" "cache" {
   tags = { Name = "${var.project}-sg-cache" }
 }
 
+resource "aws_security_group" "agent" {
+  name        = "${var.project}-sg-agent"
+  description = "Agent chatbot tasks: allow :8080 inbound"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "HTTP from anywhere (agent API)"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound (ECR pull, Secrets Manager, OpenRouter)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "${var.project}-sg-agent" }
+}
+
 # ── IAM Execution Role ────────────────────────────────────────────────────────
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${var.project}-ecs-task-execution-role"
@@ -155,7 +179,12 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
       Resource = [
         var.db_host_secret_arn,
         var.app_key_secret_arn,
-        var.db_password_secret_arn
+        var.db_password_secret_arn,
+        # Agent secrets
+        var.agent_token_secret_arn,
+        var.backend_token_secret_arn,
+        var.openrouter_api_key_secret_arn,
+        var.openrouter_model_secret_arn
       ]
     }]
   })
@@ -474,5 +503,110 @@ resource "aws_appautoscaling_policy" "app_cpu_policy" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
+  }
+}
+
+# ── Agent Task Definition ──────────────────────────────────────────────────────────
+resource "aws_ecs_task_definition" "agent" {
+  family                   = "${var.project}-taskdef-agent"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_monitoring.arn
+
+  runtime_platform {
+    cpu_architecture        = "X86_64"
+    operating_system_family = "LINUX"
+  }
+
+  container_definitions = jsonencode([{
+    name      = "${var.project}-agent"
+    image     = var.agent_image
+    cpu       = 512
+    memory    = 1024
+    essential = true
+
+    portMappings = [{
+      name          = "${var.project}-agent"
+      containerPort = 8080
+      hostPort      = 8080
+      protocol      = "tcp"
+      appProtocol   = "http"
+    }]
+
+    environment = [
+      { name = "ENABLE_LLM_ROUTER", value = "true" },
+      { name = "SMARTHR_BACKEND_URL", value = "https://${var.app_domain}" }
+    ]
+
+    # Sensitive values pulled from Secrets Manager at task startup
+    secrets = [
+      { name = "SMARTHR_AGENT_TOKEN", valueFrom = var.agent_token_secret_arn },
+      { name = "SMARTHR_BACKEND_TOKEN", valueFrom = var.backend_token_secret_arn },
+      { name = "OPENROUTER_API_KEY", valueFrom = var.openrouter_api_key_secret_arn },
+      { name = "OPENROUTER_MODEL", valueFrom = var.openrouter_model_secret_arn }
+    ]
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/${var.project}"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "agent"
+      }
+    }
+
+    healthCheck = {
+      command     = ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval    = 30
+      timeout     = 5
+      retries     = 3
+      startPeriod = 30
+    }
+  }])
+}
+
+# ── Agent ECS Service ──────────────────────────────────────────────────────────────────
+resource "aws_ecs_service" "agent" {
+  name                   = "${var.project}-agent-service"
+  cluster                = aws_ecs_cluster.main.id
+  task_definition        = aws_ecs_task_definition.agent.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = false
+
+  network_configuration {
+    subnets          = var.public_subnet_ids
+    security_groups  = [aws_security_group.agent.id]
+    assign_public_ip = true
+  }
+
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_private_dns_namespace.main.arn
+
+    service {
+      port_name      = "${var.project}-agent"
+      discovery_name = "${var.project}-agent"
+      client_alias {
+        port     = 8080
+        dns_name = "${var.project}-agent"
+      }
+    }
+
+    log_configuration {
+      log_driver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/${var.project}"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "service-connect-agent"
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
   }
 }

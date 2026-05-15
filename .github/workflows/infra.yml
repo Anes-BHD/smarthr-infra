@@ -110,17 +110,22 @@ jobs:
     needs: [security]
     env:
       # Sensitive — stored as secrets
-      TF_VAR_db_password:      ${{ secrets.TF_VAR_db_password }}
-      TF_VAR_app_key:          ${{ secrets.TF_VAR_app_key }}
-      TF_VAR_backend_image:    ${{ secrets.TF_VAR_backend_image }}
-      TF_VAR_web_image:        ${{ secrets.TF_VAR_web_image }}
-      TF_VAR_redis_image:      ${{ secrets.TF_VAR_redis_image }}
+      TF_VAR_db_password:          ${{ secrets.TF_VAR_db_password }}
+      TF_VAR_app_key:              ${{ secrets.TF_VAR_app_key }}
+      TF_VAR_backend_image:        ${{ secrets.TF_VAR_backend_image }}
+      TF_VAR_web_image:            ${{ secrets.TF_VAR_web_image }}
+      TF_VAR_redis_image:          ${{ secrets.TF_VAR_redis_image }}
+      TF_VAR_agent_image:          ${{ secrets.TF_VAR_agent_image }}
+      TF_VAR_agent_token:          ${{ secrets.TF_VAR_SMARTHR_AGENT_TOKEN }}
+      TF_VAR_backend_token:        ${{ secrets.TF_VAR_SMARTHR_BACKEND_TOKEN }}
+      TF_VAR_openrouter_api_key:   ${{ secrets.TF_VAR_openrouter_api_key }}
+      TF_VAR_openrouter_model:     ${{ secrets.TF_VAR_openrouter_model }}
       # Non-sensitive — stored as secrets (all your TF_VAR_* are secrets, not vars)
-      TF_VAR_project:          ${{ secrets.TF_VAR_project }}
-      TF_VAR_environment:      ${{ secrets.TF_VAR_environment }}
-      TF_VAR_aws_region:       ${{ secrets.TF_VAR_aws_region }}
-      TF_VAR_vpc_cidr:         ${{ secrets.TF_VAR_vpc_cidr }}
-      TF_VAR_app_domain:       ${{ secrets.TF_VAR_app_domain }}
+      TF_VAR_project:              ${{ secrets.TF_VAR_project }}
+      TF_VAR_environment:          ${{ secrets.TF_VAR_environment }}
+      TF_VAR_aws_region:           ${{ secrets.TF_VAR_aws_region }}
+      TF_VAR_vpc_cidr:             ${{ secrets.TF_VAR_vpc_cidr }}
+      TF_VAR_app_domain:           ${{ secrets.TF_VAR_app_domain }}
 
     steps:
       - name: Checkout
@@ -210,16 +215,21 @@ jobs:
     environment: production
     env:
       # All variables needed for apply
-      TF_VAR_db_password:      ${{ secrets.TF_VAR_db_password }}
-      TF_VAR_app_key:          ${{ secrets.TF_VAR_app_key }}
-      TF_VAR_backend_image:    ${{ secrets.TF_VAR_backend_image }}
-      TF_VAR_web_image:        ${{ secrets.TF_VAR_web_image }}
-      TF_VAR_redis_image:      ${{ secrets.TF_VAR_redis_image }}
-      TF_VAR_project:          ${{ secrets.TF_VAR_project }}
-      TF_VAR_environment:      ${{ secrets.TF_VAR_environment }}
-      TF_VAR_aws_region:       ${{ secrets.TF_VAR_aws_region }}
-      TF_VAR_vpc_cidr:         ${{ secrets.TF_VAR_vpc_cidr }}
-      TF_VAR_app_domain:       ${{ secrets.TF_VAR_app_domain }}
+      TF_VAR_db_password:          ${{ secrets.TF_VAR_db_password }}
+      TF_VAR_app_key:              ${{ secrets.TF_VAR_app_key }}
+      TF_VAR_backend_image:        ${{ secrets.TF_VAR_backend_image }}
+      TF_VAR_web_image:            ${{ secrets.TF_VAR_web_image }}
+      TF_VAR_redis_image:          ${{ secrets.TF_VAR_redis_image }}
+      TF_VAR_agent_image:          ${{ secrets.TF_VAR_agent_image }}
+      TF_VAR_agent_token:          ${{ secrets.TF_VAR_SMARTHR_AGENT_TOKEN }}
+      TF_VAR_backend_token:        ${{ secrets.TF_VAR_SMARTHR_BACKEND_TOKEN }}
+      TF_VAR_openrouter_api_key:   ${{ secrets.TF_VAR_openrouter_api_key }}
+      TF_VAR_openrouter_model:     ${{ secrets.TF_VAR_openrouter_model }}
+      TF_VAR_project:              ${{ secrets.TF_VAR_project }}
+      TF_VAR_environment:          ${{ secrets.TF_VAR_environment }}
+      TF_VAR_aws_region:           ${{ secrets.TF_VAR_aws_region }}
+      TF_VAR_vpc_cidr:             ${{ secrets.TF_VAR_vpc_cidr }}
+      TF_VAR_app_domain:           ${{ secrets.TF_VAR_app_domain }}
 
     steps:
       - name: Checkout
