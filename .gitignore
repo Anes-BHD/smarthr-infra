@@ -22,7 +22,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
-##
 # Checkov output
 checkov-results/
 checkov-report.xml
