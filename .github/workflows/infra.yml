@@ -53,7 +53,7 @@ jobs:
           fi
           ls -la checkov-results.sarif
 
-      - name: Run Checkov (text summary for email)
+      - name: Run Checkov (text summary)
         run: |
           pip install checkov --quiet
           checkov -d . --framework terraform --compact --quiet > checkov-summary.txt 2>&1 || true
@@ -67,10 +67,10 @@ jobs:
       - name: Run tfsec (SARIF)
         run: tfsec . --format sarif --out tfsec-results.sarif --no-color || true
 
-      - name: Run tfsec (text summary for email)
+      - name: Run tfsec (text summary)
         run: tfsec . --no-color > tfsec-summary.txt 2>&1 || true
 
-      - name: Upload artifacts
+      - name: Upload security artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -109,23 +109,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: [security]
     env:
-      # Sensitive — stored as secrets
-      TF_VAR_db_password:          ${{ secrets.TF_VAR_db_password }}
-      TF_VAR_app_key:              ${{ secrets.TF_VAR_app_key }}
-      TF_VAR_backend_image:        ${{ secrets.TF_VAR_backend_image }}
-      TF_VAR_web_image:            ${{ secrets.TF_VAR_web_image }}
-      TF_VAR_redis_image:          ${{ secrets.TF_VAR_redis_image }}
-      TF_VAR_agent_image:          ${{ secrets.TF_VAR_agent_image }}
+      TF_VAR_db_password:          ${{ secrets.TF_VAR_DB_PASSWORD }}
+      TF_VAR_app_key:              ${{ secrets.APP_KEY }}
+      TF_VAR_db_host:              ${{ secrets.TF_VAR_DB_HOST }}
+      TF_VAR_backend_image:        ${{ secrets.TF_VAR_BACKEND_IMAGE }}
+      TF_VAR_web_image:            ${{ secrets.TF_VAR_WEB_IMAGE }}
+      TF_VAR_redis_image:          ${{ secrets.TF_VAR_REDIS_IMAGE }}
+      TF_VAR_agent_image:          ${{ secrets.TF_VAR_AGENT_IMAGE }}
       TF_VAR_agent_token:          ${{ secrets.TF_VAR_SMARTHR_AGENT_TOKEN }}
       TF_VAR_backend_token:        ${{ secrets.TF_VAR_SMARTHR_BACKEND_TOKEN }}
-      TF_VAR_openrouter_api_key:   ${{ secrets.TF_VAR_openrouter_api_key }}
-      TF_VAR_openrouter_model:     ${{ secrets.TF_VAR_openrouter_model }}
-      # Non-sensitive — stored as secrets (all your TF_VAR_* are secrets, not vars)
-      TF_VAR_project:              ${{ secrets.TF_VAR_project }}
-      TF_VAR_environment:          ${{ secrets.TF_VAR_environment }}
-      TF_VAR_aws_region:           ${{ secrets.TF_VAR_aws_region }}
-      TF_VAR_vpc_cidr:             ${{ secrets.TF_VAR_vpc_cidr }}
-      TF_VAR_app_domain:           ${{ secrets.TF_VAR_app_domain }}
+      TF_VAR_openrouter_api_key:   ${{ secrets.TF_VAR_OPENROUTER_API_KEY }}
+      TF_VAR_openrouter_model:     ${{ secrets.TF_VAR_OPENROUTER_MODEL }}
+      TF_VAR_project:              ${{ secrets.TF_VAR_PROJECT }}
+      TF_VAR_environment:          ${{ secrets.TF_VAR_ENVIRONMENT }}
+      TF_VAR_aws_region:           ${{ secrets.TF_VAR_AWS_REGION }}
+      TF_VAR_vpc_cidr:             ${{ secrets.TF_VAR_VPC_CIDR }}
+      TF_VAR_app_domain:           ${{ secrets.TF_VAR_APP_DOMAIN }}
 
     steps:
       - name: Checkout
@@ -206,7 +205,7 @@ jobs:
           attachments: plan-output.txt
 
 
-  # ── 3. Terraform Apply (manual trigger only) ────────────────────────────────
+  # ── 3. Terraform Apply ──────────────────────────────────────────────────────
   apply:
     name: Apply
     runs-on: ubuntu-latest
@@ -214,22 +213,22 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: production
     env:
-      # All variables needed for apply
-      TF_VAR_db_password:          ${{ secrets.TF_VAR_db_password }}
-      TF_VAR_app_key:              ${{ secrets.TF_VAR_app_key }}
-      TF_VAR_backend_image:        ${{ secrets.TF_VAR_backend_image }}
-      TF_VAR_web_image:            ${{ secrets.TF_VAR_web_image }}
-      TF_VAR_redis_image:          ${{ secrets.TF_VAR_redis_image }}
-      TF_VAR_agent_image:          ${{ secrets.TF_VAR_agent_image }}
+      TF_VAR_db_password:          ${{ secrets.TF_VAR_DB_PASSWORD }}
+      TF_VAR_app_key:              ${{ secrets.APP_KEY }}
+      TF_VAR_db_host:              ${{ secrets.TF_VAR_DB_HOST }}
+      TF_VAR_backend_image:        ${{ secrets.TF_VAR_BACKEND_IMAGE }}
+      TF_VAR_web_image:            ${{ secrets.TF_VAR_WEB_IMAGE }}
+      TF_VAR_redis_image:          ${{ secrets.TF_VAR_REDIS_IMAGE }}
+      TF_VAR_agent_image:          ${{ secrets.TF_VAR_AGENT_IMAGE }}
       TF_VAR_agent_token:          ${{ secrets.TF_VAR_SMARTHR_AGENT_TOKEN }}
       TF_VAR_backend_token:        ${{ secrets.TF_VAR_SMARTHR_BACKEND_TOKEN }}
-      TF_VAR_openrouter_api_key:   ${{ secrets.TF_VAR_openrouter_api_key }}
-      TF_VAR_openrouter_model:     ${{ secrets.TF_VAR_openrouter_model }}
-      TF_VAR_project:              ${{ secrets.TF_VAR_project }}
-      TF_VAR_environment:          ${{ secrets.TF_VAR_environment }}
-      TF_VAR_aws_region:           ${{ secrets.TF_VAR_aws_region }}
-      TF_VAR_vpc_cidr:             ${{ secrets.TF_VAR_vpc_cidr }}
-      TF_VAR_app_domain:           ${{ secrets.TF_VAR_app_domain }}
+      TF_VAR_openrouter_api_key:   ${{ secrets.TF_VAR_OPENROUTER_API_KEY }}
+      TF_VAR_openrouter_model:     ${{ secrets.TF_VAR_OPENROUTER_MODEL }}
+      TF_VAR_project:              ${{ secrets.TF_VAR_PROJECT }}
+      TF_VAR_environment:          ${{ secrets.TF_VAR_ENVIRONMENT }}
+      TF_VAR_aws_region:           ${{ secrets.TF_VAR_AWS_REGION }}
+      TF_VAR_vpc_cidr:             ${{ secrets.TF_VAR_VPC_CIDR }}
+      TF_VAR_app_domain:           ${{ secrets.TF_VAR_APP_DOMAIN }}
 
     steps:
       - name: Checkout
