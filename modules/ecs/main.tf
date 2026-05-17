@@ -324,7 +324,7 @@ resource "aws_ecs_task_definition" "app" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "php-fpm -t && kill -0 1 || exit 1"]
+        command     = ["CMD-SHELL", "kill -0 1 || exit 1"]
         interval    = 10
         timeout     = 5
         retries     = 10
@@ -387,7 +387,7 @@ resource "aws_ecs_task_definition" "app" {
 
       environment = [
         { name = "ENABLE_LLM_ROUTER", value = "true" },
-        { name = "SMARTHR_BACKEND_URL", value = "http://127.0.0.1:8000" }
+        { name = "SMARTHR_BACKEND_URL", value = "http://127.0.0.1:80" }
       ]
 
       secrets = [
@@ -494,6 +494,11 @@ resource "aws_ecs_service" "app" {
         "awslogs-stream-prefix" = "service-connect-app"
       }
     }
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
   }
 
   depends_on = [aws_ecs_service.cache]
