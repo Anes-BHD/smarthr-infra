@@ -387,7 +387,7 @@ resource "aws_ecs_task_definition" "app" {
 
       environment = [
         { name = "ENABLE_LLM_ROUTER", value = "true" },
-        { name = "SMARTHR_BACKEND_URL", value = "https://${var.app_domain}" }
+        { name = "SMARTHR_BACKEND_URL", value = "http://127.0.0.1:8000" }
       ]
 
       secrets = [
