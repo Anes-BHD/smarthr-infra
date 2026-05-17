@@ -317,23 +317,23 @@ resource "aws_ecs_task_definition" "app" {
       }]
 
       environment = [
-        { name = "REDIS_HOST",                       value = "${var.project}-redis" },
-        { name = "APP_ENV",                          value = "production" },
-        { name = "DB_USERNAME",                      value = "smarthr" },
-        { name = "REDIS_PORT",                       value = "6379" },
-        { name = "DB_PORT",                          value = "3306" },
-        { name = "REDIS_CLIENT",                     value = "phpredis" },
-        { name = "APP_NAME",                         value = "Smarthr" },
-        { name = "PHP_OPCACHE_VALIDATE_TIMESTAMPS",  value = "0" },
-        { name = "REDIS_PASSWORD",                   value = "" },
-        { name = "APP_URL",                          value = "https://${var.app_domain}" },
-        { name = "APP_DEBUG",                        value = "false" },
-        { name = "DB_DATABASE",                      value = "smarthr" }
+        { name = "REDIS_HOST", value = "${var.project}-redis" },
+        { name = "APP_ENV", value = "production" },
+        { name = "DB_USERNAME", value = "smarthr" },
+        { name = "REDIS_PORT", value = "6379" },
+        { name = "DB_PORT", value = "3306" },
+        { name = "REDIS_CLIENT", value = "phpredis" },
+        { name = "APP_NAME", value = "Smarthr" },
+        { name = "PHP_OPCACHE_VALIDATE_TIMESTAMPS", value = "0" },
+        { name = "REDIS_PASSWORD", value = "" },
+        { name = "APP_URL", value = "https://${var.app_domain}" },
+        { name = "APP_DEBUG", value = "false" },
+        { name = "DB_DATABASE", value = "smarthr" }
       ]
 
       secrets = [
-        { name = "DB_HOST",     valueFrom = var.db_host_secret_arn },
-        { name = "APP_KEY",     valueFrom = var.app_key_secret_arn },
+        { name = "DB_HOST", valueFrom = var.db_host_secret_arn },
+        { name = "APP_KEY", valueFrom = var.app_key_secret_arn },
         { name = "DB_PASSWORD", valueFrom = var.db_password_secret_arn }
       ]
 
@@ -535,15 +535,15 @@ resource "aws_ecs_task_definition" "agent" {
     }]
 
     environment = [
-      { name = "ENABLE_LLM_ROUTER",    value = "true" },
-      { name = "SMARTHR_BACKEND_URL",  value = "https://${var.app_domain}" }
+      { name = "ENABLE_LLM_ROUTER", value = "true" },
+      { name = "SMARTHR_BACKEND_URL", value = "https://${var.app_domain}" }
     ]
 
     secrets = [
-      { name = "SMARTHR_AGENT_TOKEN",   valueFrom = var.agent_token_secret_arn },
+      { name = "SMARTHR_AGENT_TOKEN", valueFrom = var.agent_token_secret_arn },
       { name = "SMARTHR_BACKEND_TOKEN", valueFrom = var.backend_token_secret_arn },
-      { name = "OPENROUTER_API_KEY",    valueFrom = var.openrouter_api_key_secret_arn },
-      { name = "OPENROUTER_MODEL",      valueFrom = var.openrouter_model_secret_arn }
+      { name = "OPENROUTER_API_KEY", valueFrom = var.openrouter_api_key_secret_arn },
+      { name = "OPENROUTER_MODEL", valueFrom = var.openrouter_model_secret_arn }
     ]
 
     logConfiguration = {
@@ -569,12 +569,12 @@ resource "aws_ecs_task_definition" "agent" {
 
 # ── Agent ECS Service ─────────────────────────────────────────────────────────
 resource "aws_ecs_service" "agent" {
-  name                              = "${var.project}-agent-service"
-  cluster                           = aws_ecs_cluster.main.id
-  task_definition                   = aws_ecs_task_definition.agent.arn
-  desired_count                     = 1
-  launch_type                       = "FARGATE"
-  enable_execute_command            = false
+  name                   = "${var.project}-agent-service"
+  cluster                = aws_ecs_cluster.main.id
+  task_definition        = aws_ecs_task_definition.agent.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = false
 
   # FIX: give ECS 120s before acting on health status,
   # matching the startPeriod above.
