@@ -123,15 +123,15 @@ resource "aws_security_group" "cache" {
 
 resource "aws_security_group" "agent" {
   name        = "${var.project}-sg-agent"
-  description = "Agent chatbot tasks: allow :8080 inbound"
+  description = "Agent chatbot tasks: allow :8080 from ALB only"
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "HTTP from anywhere (agent API)"
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP from ALB only"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [var.alb_sg_id]
   }
 
   egress {
@@ -180,7 +180,6 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
         var.db_host_secret_arn,
         var.app_key_secret_arn,
         var.db_password_secret_arn,
-        # Agent secrets
         var.agent_token_secret_arn,
         var.backend_token_secret_arn,
         var.openrouter_api_key_secret_arn,
@@ -190,7 +189,7 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
   })
 }
 
-# ── IAM Task Role (separate from Execution Role for CKV_AWS_249) ──────────────
+# ── IAM Task Role ─────────────────────────────────────────────────────────────
 resource "aws_iam_role" "ecs_monitoring" {
   name = "${var.project}-ecs-monitoring-role"
   assume_role_policy = jsonencode({
@@ -237,7 +236,7 @@ resource "aws_service_discovery_private_dns_namespace" "main" {
   vpc         = var.vpc_id
 }
 
-# ── Cache Task Definition (matches smarthr-taskdef-cache:2 exactly) ───────────
+# ── Cache Task Definition ─────────────────────────────────────────────────────
 resource "aws_ecs_task_definition" "cache" {
   family                   = "${var.project}-taskdef-cache"
   requires_compatibilities = ["FARGATE"]
@@ -287,7 +286,7 @@ resource "aws_ecs_task_definition" "cache" {
   }])
 }
 
-# ── App Task Definition (matches smarthr-taskdef-app:20 exactly) ──────────────
+# ── App Task Definition ───────────────────────────────────────────────────────
 resource "aws_ecs_task_definition" "app" {
   family                   = "${var.project}-taskdef-app"
   requires_compatibilities = ["FARGATE"]
@@ -318,24 +317,23 @@ resource "aws_ecs_task_definition" "app" {
       }]
 
       environment = [
-        { name = "REDIS_HOST", value = "${var.project}-redis" },
-        { name = "APP_ENV", value = "production" },
-        { name = "DB_USERNAME", value = "smarthr" },
-        { name = "REDIS_PORT", value = "6379" },
-        { name = "DB_PORT", value = "3306" },
-        { name = "REDIS_CLIENT", value = "phpredis" },
-        { name = "APP_NAME", value = "Smarthr" },
-        { name = "PHP_OPCACHE_VALIDATE_TIMESTAMPS", value = "0" },
-        { name = "REDIS_PASSWORD", value = "" },
-        { name = "APP_URL", value = "https://${var.app_domain}" },
-        { name = "APP_DEBUG", value = "false" },
-        { name = "DB_DATABASE", value = "smarthr" }
+        { name = "REDIS_HOST",                       value = "${var.project}-redis" },
+        { name = "APP_ENV",                          value = "production" },
+        { name = "DB_USERNAME",                      value = "smarthr" },
+        { name = "REDIS_PORT",                       value = "6379" },
+        { name = "DB_PORT",                          value = "3306" },
+        { name = "REDIS_CLIENT",                     value = "phpredis" },
+        { name = "APP_NAME",                         value = "Smarthr" },
+        { name = "PHP_OPCACHE_VALIDATE_TIMESTAMPS",  value = "0" },
+        { name = "REDIS_PASSWORD",                   value = "" },
+        { name = "APP_URL",                          value = "https://${var.app_domain}" },
+        { name = "APP_DEBUG",                        value = "false" },
+        { name = "DB_DATABASE",                      value = "smarthr" }
       ]
 
-      # Pulled from Secrets Manager at task startup
       secrets = [
-        { name = "DB_HOST", valueFrom = var.db_host_secret_arn },
-        { name = "APP_KEY", valueFrom = var.app_key_secret_arn },
+        { name = "DB_HOST",     valueFrom = var.db_host_secret_arn },
+        { name = "APP_KEY",     valueFrom = var.app_key_secret_arn },
         { name = "DB_PASSWORD", valueFrom = var.db_password_secret_arn }
       ]
 
@@ -506,7 +504,7 @@ resource "aws_appautoscaling_policy" "app_cpu_policy" {
   }
 }
 
-# ── Agent Task Definition ──────────────────────────────────────────────────────────
+# ── Agent Task Definition ─────────────────────────────────────────────────────
 resource "aws_ecs_task_definition" "agent" {
   family                   = "${var.project}-taskdef-agent"
   requires_compatibilities = ["FARGATE"]
@@ -537,16 +535,15 @@ resource "aws_ecs_task_definition" "agent" {
     }]
 
     environment = [
-      { name = "ENABLE_LLM_ROUTER", value = "true" },
-      { name = "SMARTHR_BACKEND_URL", value = "https://${var.app_domain}" }
+      { name = "ENABLE_LLM_ROUTER",    value = "true" },
+      { name = "SMARTHR_BACKEND_URL",  value = "https://${var.app_domain}" }
     ]
 
-    # Sensitive values pulled from Secrets Manager at task startup
     secrets = [
-      { name = "SMARTHR_AGENT_TOKEN", valueFrom = var.agent_token_secret_arn },
+      { name = "SMARTHR_AGENT_TOKEN",   valueFrom = var.agent_token_secret_arn },
       { name = "SMARTHR_BACKEND_TOKEN", valueFrom = var.backend_token_secret_arn },
-      { name = "OPENROUTER_API_KEY", valueFrom = var.openrouter_api_key_secret_arn },
-      { name = "OPENROUTER_MODEL", valueFrom = var.openrouter_model_secret_arn }
+      { name = "OPENROUTER_API_KEY",    valueFrom = var.openrouter_api_key_secret_arn },
+      { name = "OPENROUTER_MODEL",      valueFrom = var.openrouter_model_secret_arn }
     ]
 
     logConfiguration = {
@@ -558,29 +555,36 @@ resource "aws_ecs_task_definition" "agent" {
       }
     }
 
+    # FIX: use 127.0.0.1 to bypass Envoy iptables interception,
+    # and give enough startPeriod for the Service Connect sidecar to initialize.
     healthCheck = {
-      command     = ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      command     = ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health || exit 1"]
       interval    = 30
-      timeout     = 5
+      timeout     = 10
       retries     = 3
-      startPeriod = 30
+      startPeriod = 120
     }
   }])
 }
 
-# ── Agent ECS Service ──────────────────────────────────────────────────────────────────
+# ── Agent ECS Service ─────────────────────────────────────────────────────────
 resource "aws_ecs_service" "agent" {
-  name                   = "${var.project}-agent-service"
-  cluster                = aws_ecs_cluster.main.id
-  task_definition        = aws_ecs_task_definition.agent.arn
-  desired_count          = 1
-  launch_type            = "FARGATE"
-  enable_execute_command = false
+  name                              = "${var.project}-agent-service"
+  cluster                           = aws_ecs_cluster.main.id
+  task_definition                   = aws_ecs_task_definition.agent.arn
+  desired_count                     = 1
+  launch_type                       = "FARGATE"
+  enable_execute_command            = false
+
+  # FIX: give ECS 120s before acting on health status,
+  # matching the startPeriod above.
+  health_check_grace_period_seconds = 120
 
   network_configuration {
-    subnets          = var.public_subnet_ids
+    # FIX: moved to private subnets, no public IP
+    subnets          = var.private_subnet_ids
     security_groups  = [aws_security_group.agent.id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   service_connect_configuration {
