@@ -269,7 +269,7 @@ resource "aws_ecs_task_definition" "app" {
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "4096"
-  memory                   = "8192"
+  memory                   = "16384"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn            = aws_iam_role.ecs_monitoring.arn
 
@@ -512,20 +512,20 @@ resource "aws_appautoscaling_target" "app_target" {
   service_namespace  = "ecs"
 }
 
-resource "aws_appautoscaling_policy" "app_cpu_policy" {
-  name               = "${var.project}-cpu-autoscaling"
+resource "aws_appautoscaling_policy" "app_memory_policy" {
+  name               = "${var.project}-memory-autoscaling"
   policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.app_target.resource_id
   scalable_dimension = aws_appautoscaling_target.app_target.scalable_dimension
   service_namespace  = aws_appautoscaling_target.app_target.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value       = 50.0
+    target_value       = 70.0
     scale_in_cooldown  = 300
     scale_out_cooldown = 300
 
     predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
     }
   }
 }
