@@ -386,10 +386,10 @@ resource "aws_ecs_task_definition" "app" {
       }]
 
       environment = [
-        { name = "ENABLE_LLM_ROUTER",   value = "true" },
+        { name = "ENABLE_LLM_ROUTER", value = "true" },
         { name = "SMARTHR_BACKEND_URL", value = "http://127.0.0.1:80" },
-        { name = "REDIS_HOST",          value = "${var.project}-redis" },
-        { name = "REDIS_PORT",          value = "6379" }
+        { name = "REDIS_HOST", value = "${var.project}-redis" },
+        { name = "REDIS_PORT", value = "6379" }
       ]
 
       secrets = [
