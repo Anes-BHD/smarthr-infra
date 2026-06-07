@@ -373,8 +373,8 @@ resource "aws_ecs_task_definition" "app" {
     {
       name      = "${var.project}-agent"
       image     = var.agent_image
-      cpu       = 512
-      memory    = 1024
+      cpu       = 1024
+      memory    = 4096
       essential = false
 
       portMappings = [{
@@ -387,6 +387,7 @@ resource "aws_ecs_task_definition" "app" {
 
       environment = [
         { name = "ENABLE_LLM_ROUTER", value = "true" },
+        { name = "ENABLE_RESPONSE_HUMANIZER", value = "false" },
         { name = "SMARTHR_BACKEND_URL", value = "http://127.0.0.1:80" },
         { name = "REDIS_HOST", value = "${var.project}-redis" },
         { name = "REDIS_PORT", value = "6379" }
