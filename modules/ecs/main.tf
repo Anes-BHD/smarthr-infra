@@ -15,7 +15,7 @@ resource "aws_kms_alias" "ecs" {
   target_key_id = aws_kms_key.ecs.key_id
 }
 
-# ── KMS Key Policy for CloudWatch Logs ─────────────────────────────────────────
+# ── KMS Key Policy for CloudWatch Logs ────────────────────────────────────────
 resource "aws_kms_key_policy" "ecs" {
   key_id = aws_kms_key.ecs.id
   policy = jsonencode({
